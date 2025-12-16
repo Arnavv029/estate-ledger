@@ -14,7 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      properties: {
+        Row: {
+          aadhaar_number: string
+          block_number: number
+          created_at: string
+          district: string
+          email: string
+          id: string
+          land_address: string
+          land_area: string
+          owner_name: string
+          owner_wallet: string
+          phone: string
+          property_id: string
+          state: string
+          survey_number: string
+          transaction_hash: string
+          updated_at: string
+          voter_id: string
+        }
+        Insert: {
+          aadhaar_number: string
+          block_number: number
+          created_at?: string
+          district: string
+          email: string
+          id?: string
+          land_address: string
+          land_area: string
+          owner_name: string
+          owner_wallet: string
+          phone: string
+          property_id: string
+          state: string
+          survey_number: string
+          transaction_hash: string
+          updated_at?: string
+          voter_id: string
+        }
+        Update: {
+          aadhaar_number?: string
+          block_number?: number
+          created_at?: string
+          district?: string
+          email?: string
+          id?: string
+          land_address?: string
+          land_area?: string
+          owner_name?: string
+          owner_wallet?: string
+          phone?: string
+          property_id?: string
+          state?: string
+          survey_number?: string
+          transaction_hash?: string
+          updated_at?: string
+          voter_id?: string
+        }
+        Relationships: []
+      }
+      transfers: {
+        Row: {
+          block_number: number
+          buyer_email: string
+          buyer_name: string
+          buyer_phone: string
+          buyer_wallet: string
+          created_at: string
+          id: string
+          property_id: string
+          seller_email: string
+          seller_name: string
+          seller_phone: string
+          seller_wallet: string
+          transaction_hash: string
+        }
+        Insert: {
+          block_number: number
+          buyer_email: string
+          buyer_name: string
+          buyer_phone: string
+          buyer_wallet: string
+          created_at?: string
+          id?: string
+          property_id: string
+          seller_email: string
+          seller_name: string
+          seller_phone: string
+          seller_wallet: string
+          transaction_hash: string
+        }
+        Update: {
+          block_number?: number
+          buyer_email?: string
+          buyer_name?: string
+          buyer_phone?: string
+          buyer_wallet?: string
+          created_at?: string
+          id?: string
+          property_id?: string
+          seller_email?: string
+          seller_name?: string
+          seller_phone?: string
+          seller_wallet?: string
+          transaction_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
