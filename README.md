@@ -1,70 +1,23 @@
-# Welcome to your Lovable project
+# 🏡 EstateLedger
 
-## Project info
+## Problem Statement
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Land and estate ownership disputes are common due to fake documents, manual record-keeping, and lack of transparency in traditional property registry systems. These issues often lead to legal conflicts, delayed transactions, and reduced trust among property owners and buyers.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Solution Overview
 
-**Use Lovable**
+EstateLedger is a digital estate registry application designed to simplify property registration and ownership transfer. The platform enables users to register property details, submit essential identity and property documents, and initiate secure ownership transfers through a structured and transparent process.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+The solution aims to reduce fraud, improve traceability, and modernize estate record management while remaining simple and user-friendly at the MVP stage.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Vision
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+EstateLedger is built with a long-term vision to evolve into a trusted, scalable digital estate registry system that supports advanced verification, automation, and transparent ownership management in future development phases.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!
 
