@@ -11,7 +11,8 @@ import {
   PropertyFormData, 
   PropertyDocuments,
   RegisteredProperty, 
-  TransferFormData, 
+  TransferFormData,
+  TransferDocuments,
   TransferRecord,
   ReceiptData 
 } from '@/types/property';
@@ -311,7 +312,10 @@ export const usePropertyRegistry = () => {
   /**
    * Transfer property ownership
    */
-  const transferProperty = useCallback(async (formData: TransferFormData): Promise<ReceiptData | null> => {
+  const transferProperty = useCallback(async (
+    formData: TransferFormData,
+    documents?: TransferDocuments
+  ): Promise<ReceiptData | null> => {
     if (!isConnected || !address) {
       toast({
         title: "Wallet not connected",
@@ -354,6 +358,50 @@ export const usePropertyRegistry = () => {
 
       // Simulate blockchain transaction
       const { hash, blockNumber } = await simulateTransaction();
+
+      // Upload transfer documents if provided
+      const transferId = `transfer-${formData.propertyId}-${Date.now()}`;
+      if (documents) {
+        const uploadPromises = [];
+        
+        if (documents.sellerAadhaar) {
+          uploadPromises.push(
+            uploadDocument(documents.sellerAadhaar, transferId, 'seller-aadhaar')
+          );
+        }
+        if (documents.sellerPan) {
+          uploadPromises.push(
+            uploadDocument(documents.sellerPan, transferId, 'seller-pan')
+          );
+        }
+        if (documents.sellerPhoto) {
+          uploadPromises.push(
+            uploadDocument(documents.sellerPhoto, transferId, 'seller-photo')
+          );
+        }
+        if (documents.buyerAadhaar) {
+          uploadPromises.push(
+            uploadDocument(documents.buyerAadhaar, transferId, 'buyer-aadhaar')
+          );
+        }
+        if (documents.buyerPan) {
+          uploadPromises.push(
+            uploadDocument(documents.buyerPan, transferId, 'buyer-pan')
+          );
+        }
+        if (documents.buyerPhoto) {
+          uploadPromises.push(
+            uploadDocument(documents.buyerPhoto, transferId, 'buyer-photo')
+          );
+        }
+        if (documents.saleAgreement) {
+          uploadPromises.push(
+            uploadDocument(documents.saleAgreement, transferId, 'sale-agreement')
+          );
+        }
+
+        await Promise.all(uploadPromises);
+      }
 
       // Save transfer to database
       const { data: dbTransfer, error: transferError } = await supabase
