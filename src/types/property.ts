@@ -68,17 +68,6 @@ export interface TransferFormData {
   buyerEmail: string;
 }
 
-// Document files for property transfer
-export interface TransferDocuments {
-  sellerAadhaar: File | null;
-  sellerPan: File | null;
-  sellerPhoto: File | null;
-  buyerAadhaar: File | null;
-  buyerPan: File | null;
-  buyerPhoto: File | null;
-  saleAgreement: File | null;
-}
-
 // Transfer record
 export interface TransferRecord {
   id: string;
