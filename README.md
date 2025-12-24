@@ -17,10 +17,3 @@ The solution aims to reduce fraud, improve traceability, and modernize estate re
 ## Vision
 
 EstateLedger is built with a long-term vision to evolve into a trusted, scalable digital estate registry system that supports advanced verification, automation, and transparent ownership management in future development phases.
-
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
