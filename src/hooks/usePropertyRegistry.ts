@@ -9,6 +9,7 @@ import { useWallet } from '@/context/WalletContext';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   PropertyFormData, 
+  PropertyDocuments,
   RegisteredProperty, 
   TransferFormData, 
   TransferRecord,
@@ -36,6 +37,33 @@ const simulateTransaction = async (): Promise<{ hash: string; blockNumber: numbe
   const blockNumber = Math.floor(Math.random() * 1000000) + 5000000;
   
   return { hash, blockNumber };
+};
+
+/**
+ * Upload a document file to Supabase storage
+ */
+const uploadDocument = async (
+  file: File, 
+  propertyId: string, 
+  docType: string
+): Promise<string | null> => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${propertyId}/${docType}.${fileExt}`;
+  
+  const { data, error } = await supabase.storage
+    .from('property-documents')
+    .upload(fileName, file, { upsert: true });
+  
+  if (error) {
+    console.error(`Failed to upload ${docType}:`, error);
+    return null;
+  }
+  
+  const { data: urlData } = supabase.storage
+    .from('property-documents')
+    .getPublicUrl(fileName);
+  
+  return urlData.publicUrl;
 };
 
 export const usePropertyRegistry = () => {
@@ -126,7 +154,10 @@ export const usePropertyRegistry = () => {
   /**
    * Register a new property on the blockchain and save to database
    */
-  const registerProperty = useCallback(async (formData: PropertyFormData): Promise<ReceiptData | null> => {
+  const registerProperty = useCallback(async (
+    formData: PropertyFormData, 
+    documents?: PropertyDocuments
+  ): Promise<ReceiptData | null> => {
     if (!isConnected || !address) {
       toast({
         title: "Wallet not connected",
@@ -146,6 +177,54 @@ export const usePropertyRegistry = () => {
       // In production, this would interact with your smart contract
       const { hash, blockNumber } = await simulateTransaction();
 
+      // Upload documents if provided
+      let documentUrls: Record<string, string | null> = {};
+      if (documents) {
+        const uploadPromises = [];
+        
+        if (documents.aadhaarFront) {
+          uploadPromises.push(
+            uploadDocument(documents.aadhaarFront, propertyId, 'aadhaar-front')
+              .then(url => ({ key: 'aadhaar_front_url', url }))
+          );
+        }
+        if (documents.aadhaarBack) {
+          uploadPromises.push(
+            uploadDocument(documents.aadhaarBack, propertyId, 'aadhaar-back')
+              .then(url => ({ key: 'aadhaar_back_url', url }))
+          );
+        }
+        if (documents.panCard) {
+          uploadPromises.push(
+            uploadDocument(documents.panCard, propertyId, 'pan-card')
+              .then(url => ({ key: 'pan_card_url', url }))
+          );
+        }
+        if (documents.ownerPhoto) {
+          uploadPromises.push(
+            uploadDocument(documents.ownerPhoto, propertyId, 'owner-photo')
+              .then(url => ({ key: 'owner_photo_url', url }))
+          );
+        }
+        if (documents.propertyPhoto) {
+          uploadPromises.push(
+            uploadDocument(documents.propertyPhoto, propertyId, 'property-photo')
+              .then(url => ({ key: 'property_photo_url', url }))
+          );
+        }
+        if (documents.ownershipDocument) {
+          uploadPromises.push(
+            uploadDocument(documents.ownershipDocument, propertyId, 'ownership-document')
+              .then(url => ({ key: 'ownership_document_url', url }))
+          );
+        }
+
+        const uploadResults = await Promise.all(uploadPromises);
+        uploadResults.forEach(result => {
+          documentUrls[result.key] = result.url;
+        });
+      }
+
       // Save to database
       const { data: dbProperty, error: dbError } = await supabase
         .from('properties')
@@ -164,6 +243,7 @@ export const usePropertyRegistry = () => {
           state: formData.state,
           transaction_hash: hash,
           block_number: blockNumber,
+          ...documentUrls,
         })
         .select()
         .single();

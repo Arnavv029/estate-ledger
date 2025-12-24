@@ -1,7 +1,7 @@
 /**
  * PropertyRegistry.tsx
  * Form for registering new properties on the blockchain.
- * Collects owner details and land information with validation.
+ * Collects owner details, land information, and document uploads with validation.
  */
 
 import React, { useState } from 'react';
@@ -10,14 +10,15 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useWallet } from '@/context/WalletContext';
 import { usePropertyRegistry } from '@/hooks/usePropertyRegistry';
 import { ReceiptCard } from '@/components/ReceiptCard';
-import { PropertyFormData, ReceiptData } from '@/types/property';
+import { DocumentUpload } from '@/components/DocumentUpload';
+import { PropertyFormData, PropertyDocuments, ReceiptData } from '@/types/property';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { FileText, Loader2, User, MapPin, Wallet } from 'lucide-react';
+import { FileText, Loader2, User, MapPin, Wallet, Upload } from 'lucide-react';
 
 // Initial form state
 const initialFormData: PropertyFormData = {
@@ -33,8 +34,18 @@ const initialFormData: PropertyFormData = {
   state: '',
 };
 
+// Initial document state
+const initialDocuments: PropertyDocuments = {
+  aadhaarFront: null,
+  aadhaarBack: null,
+  panCard: null,
+  ownerPhoto: null,
+  propertyPhoto: null,
+  ownershipDocument: null,
+};
+
 // Form validation rules
-const validateForm = (data: PropertyFormData): Record<string, string> => {
+const validateForm = (data: PropertyFormData, documents: PropertyDocuments): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   if (!data.ownerName.trim()) errors.ownerName = 'Owner name is required';
@@ -65,6 +76,14 @@ const validateForm = (data: PropertyFormData): Record<string, string> => {
   if (!data.district.trim()) errors.district = 'District is required';
   if (!data.state.trim()) errors.state = 'State is required';
 
+  // Document validations
+  if (!documents.aadhaarFront) errors.aadhaarFront = 'Aadhaar front is required';
+  if (!documents.aadhaarBack) errors.aadhaarBack = 'Aadhaar back is required';
+  if (!documents.panCard) errors.panCard = 'PAN card is required';
+  if (!documents.ownerPhoto) errors.ownerPhoto = 'Owner photograph is required';
+  if (!documents.propertyPhoto) errors.propertyPhoto = 'Property photograph is required';
+  if (!documents.ownershipDocument) errors.ownershipDocument = 'Ownership document is required';
+
   return errors;
 };
 
@@ -74,6 +93,7 @@ export const PropertyRegistry: React.FC = () => {
   const { registerProperty, isProcessing } = usePropertyRegistry();
   
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData);
+  const [documents, setDocuments] = useState<PropertyDocuments>(initialDocuments);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
@@ -81,9 +101,16 @@ export const PropertyRegistry: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // Handle document changes
+  const handleDocumentChange = (field: keyof PropertyDocuments, file: File | null) => {
+    setDocuments(prev => ({ ...prev, [field]: file }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -91,20 +118,20 @@ export const PropertyRegistry: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
-    const validationErrors = validateForm(formData);
+    // Validate form and documents
+    const validationErrors = validateForm(formData, documents);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast({
         title: 'Validation Error',
-        description: 'Please fix the highlighted fields.',
+        description: 'Please fix the highlighted fields and upload all required documents.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Register property
-    const result = await registerProperty(formData);
+    // Register property with documents
+    const result = await registerProperty(formData, documents);
     if (result) {
       setReceipt(result);
     }
@@ -114,6 +141,7 @@ export const PropertyRegistry: React.FC = () => {
   const handleReceiptClose = () => {
     setReceipt(null);
     setFormData(initialFormData);
+    setDocuments(initialDocuments);
     navigate('/dashboard');
   };
 
@@ -322,6 +350,92 @@ export const PropertyRegistry: React.FC = () => {
                   <p className="text-sm text-destructive mt-1">{errors.state}</p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Owner Identity Documents Section */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-primary" />
+                <CardTitle className="text-lg">Owner Identity Documents</CardTitle>
+              </div>
+              <CardDescription>Upload identity verification documents</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-6">
+              <DocumentUpload
+                id="aadhaarFront"
+                label="Aadhaar Card (Front)"
+                description="Upload front side of Aadhaar card"
+                accept="image/*,application/pdf"
+                file={documents.aadhaarFront}
+                onFileChange={(file) => handleDocumentChange('aadhaarFront', file)}
+                error={errors.aadhaarFront}
+                required
+              />
+              <DocumentUpload
+                id="aadhaarBack"
+                label="Aadhaar Card (Back)"
+                description="Upload back side of Aadhaar card"
+                accept="image/*,application/pdf"
+                file={documents.aadhaarBack}
+                onFileChange={(file) => handleDocumentChange('aadhaarBack', file)}
+                error={errors.aadhaarBack}
+                required
+              />
+              <DocumentUpload
+                id="panCard"
+                label="PAN Card"
+                description="Upload PAN card image or PDF"
+                accept="image/*,application/pdf"
+                file={documents.panCard}
+                onFileChange={(file) => handleDocumentChange('panCard', file)}
+                error={errors.panCard}
+                required
+              />
+              <DocumentUpload
+                id="ownerPhoto"
+                label="Owner Photograph"
+                description="Upload a recent photograph"
+                accept="image/*"
+                file={documents.ownerPhoto}
+                onFileChange={(file) => handleDocumentChange('ownerPhoto', file)}
+                error={errors.ownerPhoto}
+                required
+              />
+            </CardContent>
+          </Card>
+
+          {/* Property Documents Section */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <CardTitle className="text-lg">Property Documents</CardTitle>
+              </div>
+              <CardDescription>Upload property-related documents</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-6">
+              <DocumentUpload
+                id="propertyPhoto"
+                label="Land / Property Photograph"
+                description="Upload a photograph of the property"
+                accept="image/*"
+                file={documents.propertyPhoto}
+                onFileChange={(file) => handleDocumentChange('propertyPhoto', file)}
+                error={errors.propertyPhoto}
+                required
+              />
+              <DocumentUpload
+                id="ownershipDocument"
+                label="Property Ownership Document"
+                description="Sale deed, registry paper, or ownership proof"
+                accept="image/*,application/pdf"
+                file={documents.ownershipDocument}
+                onFileChange={(file) => handleDocumentChange('ownershipDocument', file)}
+                error={errors.ownershipDocument}
+                required
+              />
             </CardContent>
           </Card>
 
