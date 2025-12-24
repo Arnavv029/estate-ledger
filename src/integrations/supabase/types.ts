@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       properties: {
         Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
           aadhaar_number: string
           block_number: number
           created_at: string
@@ -25,9 +27,13 @@ export type Database = {
           land_address: string
           land_area: string
           owner_name: string
+          owner_photo_url: string | null
           owner_wallet: string
+          ownership_document_url: string | null
+          pan_card_url: string | null
           phone: string
           property_id: string
+          property_photo_url: string | null
           state: string
           survey_number: string
           transaction_hash: string
@@ -35,6 +41,8 @@ export type Database = {
           voter_id: string
         }
         Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
           aadhaar_number: string
           block_number: number
           created_at?: string
@@ -44,9 +52,13 @@ export type Database = {
           land_address: string
           land_area: string
           owner_name: string
+          owner_photo_url?: string | null
           owner_wallet: string
+          ownership_document_url?: string | null
+          pan_card_url?: string | null
           phone: string
           property_id: string
+          property_photo_url?: string | null
           state: string
           survey_number: string
           transaction_hash: string
@@ -54,6 +66,8 @@ export type Database = {
           voter_id: string
         }
         Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
           aadhaar_number?: string
           block_number?: number
           created_at?: string
@@ -63,9 +77,13 @@ export type Database = {
           land_address?: string
           land_area?: string
           owner_name?: string
+          owner_photo_url?: string | null
           owner_wallet?: string
+          ownership_document_url?: string | null
+          pan_card_url?: string | null
           phone?: string
           property_id?: string
+          property_photo_url?: string | null
           state?: string
           survey_number?: string
           transaction_hash?: string

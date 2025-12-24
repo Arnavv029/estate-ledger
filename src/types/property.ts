@@ -17,6 +17,26 @@ export interface PropertyFormData {
   state: string;
 }
 
+// Document files for property registration
+export interface PropertyDocuments {
+  aadhaarFront: File | null;
+  aadhaarBack: File | null;
+  panCard: File | null;
+  ownerPhoto: File | null;
+  propertyPhoto: File | null;
+  ownershipDocument: File | null;
+}
+
+// Document URLs stored in database
+export interface PropertyDocumentUrls {
+  aadhaarFrontUrl?: string;
+  aadhaarBackUrl?: string;
+  panCardUrl?: string;
+  ownerPhotoUrl?: string;
+  propertyPhotoUrl?: string;
+  ownershipDocumentUrl?: string;
+}
+
 // Registered property with blockchain info
 export interface RegisteredProperty {
   id: string;
