@@ -10,13 +10,14 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useWallet } from '@/context/WalletContext';
 import { usePropertyRegistry } from '@/hooks/usePropertyRegistry';
 import { ReceiptCard } from '@/components/ReceiptCard';
-import { TransferFormData, ReceiptData } from '@/types/property';
+import { DocumentUpload } from '@/components/DocumentUpload';
+import { TransferFormData, TransferDocuments, ReceiptData } from '@/types/property';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { ArrowRightLeft, Loader2, User, UserCheck, Search, AlertCircle } from 'lucide-react';
+import { ArrowRightLeft, Loader2, User, UserCheck, Search, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 
 // Initial form state
 const initialFormData: TransferFormData = {
@@ -31,8 +32,22 @@ const initialFormData: TransferFormData = {
   buyerEmail: '',
 };
 
+// Initial documents state
+const initialDocuments: TransferDocuments = {
+  sellerAadhaar: null,
+  sellerPan: null,
+  sellerPhoto: null,
+  buyerAadhaar: null,
+  buyerPan: null,
+  buyerPhoto: null,
+  saleAgreement: null,
+};
+
 // Form validation rules
-const validateForm = (data: TransferFormData): Record<string, string> => {
+const validateForm = (
+  data: TransferFormData, 
+  documents: TransferDocuments
+): Record<string, string> => {
   const errors: Record<string, string> = {};
 
   if (!data.propertyId.trim()) errors.propertyId = 'Property ID is required';
@@ -67,6 +82,15 @@ const validateForm = (data: TransferFormData): Record<string, string> => {
     errors.buyerWallet = 'Buyer wallet must be different from seller';
   }
 
+  // Document validation
+  if (!documents.sellerAadhaar) errors.sellerAadhaar = 'Seller Aadhaar is required';
+  if (!documents.sellerPan) errors.sellerPan = 'Seller PAN is required';
+  if (!documents.sellerPhoto) errors.sellerPhoto = 'Seller photograph is required';
+  if (!documents.buyerAadhaar) errors.buyerAadhaar = 'Buyer Aadhaar is required';
+  if (!documents.buyerPan) errors.buyerPan = 'Buyer PAN is required';
+  if (!documents.buyerPhoto) errors.buyerPhoto = 'Buyer photograph is required';
+  if (!documents.saleAgreement) errors.saleAgreement = 'Sale agreement is required';
+
   return errors;
 };
 
@@ -79,9 +103,14 @@ export const TransferProperty: React.FC = () => {
     ...initialFormData,
     sellerWallet: address || '',
   });
+  const [documents, setDocuments] = useState<TransferDocuments>(initialDocuments);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [propertyFound, setPropertyFound] = useState<boolean | null>(null);
+  const [verifiedProperty, setVerifiedProperty] = useState<{
+    ownershipDocumentUrl?: string;
+    landAddress?: string;
+  } | null>(null);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,8 +121,16 @@ export const TransferProperty: React.FC = () => {
     }
   };
 
+  // Handle document changes
+  const handleDocumentChange = (field: keyof TransferDocuments, file: File | null) => {
+    setDocuments(prev => ({ ...prev, [field]: file }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
   // Search for property
-  const handlePropertySearch = () => {
+  const handlePropertySearch = async () => {
     if (!formData.propertyId.trim()) {
       setErrors(prev => ({ ...prev, propertyId: 'Enter a property ID to search' }));
       return;
@@ -103,12 +140,26 @@ export const TransferProperty: React.FC = () => {
     setPropertyFound(!!property);
     
     if (!property) {
+      setVerifiedProperty(null);
       toast({
         title: 'Property Not Found',
         description: 'No property found with this ID. Please check and try again.',
         variant: 'destructive',
       });
     } else {
+      // Fetch full property details from database to get ownership document URL
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data } = await supabase
+        .from('properties')
+        .select('ownership_document_url, land_address')
+        .eq('property_id', formData.propertyId)
+        .maybeSingle();
+      
+      setVerifiedProperty({
+        ownershipDocumentUrl: data?.ownership_document_url || undefined,
+        landAddress: data?.land_address,
+      });
+      
       toast({
         title: 'Property Found',
         description: `${property.landDetails.address}`,
@@ -120,7 +171,7 @@ export const TransferProperty: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validationErrors = validateForm(formData);
+    const validationErrors = validateForm(formData, documents);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast({
@@ -131,7 +182,7 @@ export const TransferProperty: React.FC = () => {
       return;
     }
 
-    const result = await transferProperty(formData);
+    const result = await transferProperty(formData, documents);
     if (result) {
       setReceipt(result);
     }
@@ -141,7 +192,9 @@ export const TransferProperty: React.FC = () => {
   const handleReceiptClose = () => {
     setReceipt(null);
     setFormData({ ...initialFormData, sellerWallet: address || '' });
+    setDocuments(initialDocuments);
     setPropertyFound(null);
+    setVerifiedProperty(null);
     navigate('/dashboard');
   };
 
@@ -362,6 +415,138 @@ export const TransferProperty: React.FC = () => {
                 {errors.buyerEmail && (
                   <p className="text-sm text-destructive mt-1">{errors.buyerEmail}</p>
                 )}
+              </div>
+
+              {/* Buyer Documents */}
+              <div className="sm:col-span-2 pt-4 border-t border-border/50">
+                <h4 className="font-medium mb-4 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-accent" />
+                  Buyer Documents
+                </h4>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <DocumentUpload
+                    id="buyerAadhaar"
+                    label="Aadhaar Card"
+                    accept="image/*,.pdf"
+                    file={documents.buyerAadhaar}
+                    onFileChange={(file) => handleDocumentChange('buyerAadhaar', file)}
+                    error={errors.buyerAadhaar}
+                    required
+                  />
+                  <DocumentUpload
+                    id="buyerPan"
+                    label="PAN Card"
+                    accept="image/*,.pdf"
+                    file={documents.buyerPan}
+                    onFileChange={(file) => handleDocumentChange('buyerPan', file)}
+                    error={errors.buyerPan}
+                    required
+                  />
+                  <DocumentUpload
+                    id="buyerPhoto"
+                    label="Photograph"
+                    accept="image/*"
+                    file={documents.buyerPhoto}
+                    onFileChange={(file) => handleDocumentChange('buyerPhoto', file)}
+                    error={errors.buyerPhoto}
+                    required
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seller Documents Section */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <CardTitle className="text-lg">Seller Documents</CardTitle>
+              </div>
+              <CardDescription>Upload seller identity documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <DocumentUpload
+                  id="sellerAadhaar"
+                  label="Aadhaar Card"
+                  accept="image/*,.pdf"
+                  file={documents.sellerAadhaar}
+                  onFileChange={(file) => handleDocumentChange('sellerAadhaar', file)}
+                  error={errors.sellerAadhaar}
+                  required
+                />
+                <DocumentUpload
+                  id="sellerPan"
+                  label="PAN Card"
+                  accept="image/*,.pdf"
+                  file={documents.sellerPan}
+                  onFileChange={(file) => handleDocumentChange('sellerPan', file)}
+                  error={errors.sellerPan}
+                  required
+                />
+                <DocumentUpload
+                  id="sellerPhoto"
+                  label="Photograph"
+                  accept="image/*"
+                  file={documents.sellerPhoto}
+                  onFileChange={(file) => handleDocumentChange('sellerPhoto', file)}
+                  error={errors.sellerPhoto}
+                  required
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Transfer Documents Section */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-accent" />
+                <CardTitle className="text-lg">Transfer Documents</CardTitle>
+              </div>
+              <CardDescription>Upload property transfer documents</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <DocumentUpload
+                  id="saleAgreement"
+                  label="Sale Agreement / Transfer Deed"
+                  accept="image/*,.pdf"
+                  file={documents.saleAgreement}
+                  onFileChange={(file) => handleDocumentChange('saleAgreement', file)}
+                  error={errors.saleAgreement}
+                  required
+                />
+                
+                {/* Auto-fetched Ownership Proof */}
+                <div className="space-y-2">
+                  <Label>Property Ownership Proof</Label>
+                  {propertyFound && verifiedProperty?.ownershipDocumentUrl ? (
+                    <div className="border border-accent/50 bg-accent/5 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-accent mb-2">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Auto-fetched from Registry</span>
+                      </div>
+                      <a 
+                        href={verifiedProperty.ownershipDocumentUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        View Document
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="border border-border/50 bg-muted/30 rounded-lg p-4 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {propertyFound 
+                          ? 'No ownership document on file' 
+                          : 'Verify property to fetch ownership proof'}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
